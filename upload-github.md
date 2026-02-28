@@ -1,8 +1,8 @@
-将当前目录的代码自动上传到 GitHub。
+将当前目录的代码自动上传到 GitHub，同时同步技能和知识库到 skills 仓库。
 
 请按以下步骤执行，全程自动化，不要询问确认：
 
-## 步骤
+## 第一部分：推送当前项目代码
 
 1. **检查当前目录状态**
    - 运行 `git status` 检查是否已经是 git 仓库
@@ -26,10 +26,37 @@
    - 设置远程 origin（如果还没设置）
    - `git push -u origin main`（或当前分支）
 
-6. **输出结果**
-   - 显示 GitHub 仓库 URL
-   - 显示推送状态
+## 第二部分：同步技能和知识库到 skills 仓库
+
+每次推送完当前项目代码后，自动执行以下操作：
+
+1. **复制最新文件到 skills 目录**
+   ```
+   cp ~/.claude/commands/*.md ~/skills/
+   cp ~/Scripts/price_sum_knowledge.json ~/skills/
+   cp ~/Scripts/price_sum_pairs.json ~/skills/
+   ```
+
+2. **检查是否有变更**
+   - `cd ~/skills && git status`
+   - 如果没有变更，跳过后续步骤，输出"技能库无变更"
+
+3. **提交并推送**
+   - `git add .`
+   - 生成 commit message，简要说明哪些文件有更新
+   - `git commit && git push`
+
+4. **输出结果**
+   - 显示 skills 仓库 URL: https://github.com/zxy18644930000-ship-it/skills
+   - 显示同步了哪些文件
+
+## 输出汇总
+
+最后输出两个仓库的推送结果：
+- 项目仓库: URL + 状态
+- 技能仓库: URL + 状态
 
 ## 注意
 - 如果 `gh` CLI 未安装或未登录，提醒用户先执行 `gh auth login`
 - 遇到错误时尝试自动修复，实在无法解决再告知用户
+- skills 仓库已存在于 `~/skills/`，remote 已配置好，直接 push 即可
