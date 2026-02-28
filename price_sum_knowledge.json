@@ -1,10 +1,10 @@
 {
   "meta": {
-    "version": "1.2",
+    "version": "1.4",
     "created": "2026-02-28",
-    "description": "期权对价格之和运动规律知识库 - 贝叶斯持续更新",
-    "product": "ag(白银)",
-    "update_count": 2
+    "description": "期权研究知识库 - 涵盖价格之和运动规律、交易策略、市场结构、到期日历等，贝叶斯持续更新",
+    "product": "全市场商品期权(起源于ag白银)",
+    "update_count": 4
   },
   "beliefs": [
     {
@@ -179,8 +179,123 @@
         "2026-02-28: P17000暴涨到197后回落，但未回到145的钉死价位，而是在155-185间高位震荡，收盘161。新平台比钉死价高约15点(+10%)"
       ],
       "note": "这意味着即使错过暴涨峰值，价格之和仍然比钉死期间高"
+    },
+    {
+      "id": "B013",
+      "category": "交易策略",
+      "statement": "DTE≤14天的期权，夜盘开盘10分钟后卖出平衡宽跨(C/P比值接近1)，夜盘收盘前平仓，大概率可以赚到theta衰减",
+      "confidence": 0.30,
+      "evidence_for": 0,
+      "evidence_against": 1,
+      "first_observed": "2026-02-28",
+      "last_updated": "2026-02-28",
+      "data_points": [
+        "2026-02-27夜盘郑商所604(DTE=11天)6品种回测,选对逻辑:总权金刚过10+尽量远虚值+C/P平衡. 胜率0/6,平均亏7.1%. 远虚值配对权金薄,gamma/vega冲击占比大,2小时theta(≈1.5%)根本扛不住. 当晚5/6品种下跌属单边市",
+        "akshare日线回测(ag单品种多日): 5个配对胜率57%~83%, 累计多数盈利, 越临近到期胜率越高"
+      ],
+      "open_questions": [
+        "需要更多震荡市的夜盘数据验证——单边市天然不利于卖方",
+        "夜盘时长差异大(2h~5.5h)是否影响theta收割效果?",
+        "是否应该加入止损条件(如亏损>15%立即平仓)?",
+        "akshare日线(含日盘)胜率高于纯夜盘,说明日盘theta衰减可能更显著?",
+        "最低总权金门槛应≥10(太低的配对价差吃掉theta利润)"
+      ],
+      "selection_rule": "总权金刚过10(不贪多)+尽量远虚值(安全边际)+C/P比≤0.4偏差",
+      "note": "当前仅1个夜盘的分钟级数据,且该夜盘多数品种单边下跌,不利于公平验证。需积累20+个夜盘数据后重新评估。2小时夜盘theta理论值≈1/(DTE×6),DTE=11时仅1.5%"
+    },
+    {
+      "id": "B014",
+      "category": "基础知识",
+      "statement": "每个交易日有6小时交易时间(上午2.5h+下午1.5h+夜盘2h)。夜盘theta理论衰减值=夜盘时长/(DTE×6)。例: DTE=11天的2小时夜盘theta≈1/(11×6)=1.5%",
+      "confidence": 0.90,
+      "evidence_for": 1,
+      "evidence_against": 0,
+      "first_observed": "2026-02-28",
+      "last_updated": "2026-02-28",
+      "data_points": [
+        "理论推导: 6小时/天×DTE天=总剩余交易时间, 夜盘占比=夜盘时长/6"
+      ],
+      "note": "不同交易所夜盘时长不同(2h~5.5h), theta占比也不同。实际theta非线性(越近到期衰减越快), 此为线性近似"
+    },
+    {
+      "id": "B015",
+      "category": "交易规则",
+      "statement": "卖出宽跨选对时,总权金必须≥10(太低的配对bid-ask价差会吃掉theta利润)。选对逻辑: 总权金刚过门槛即可,不要选太近平值——权金越大意味着离平值越近,安全边际越小",
+      "confidence": 0.85,
+      "evidence_for": 1,
+      "evidence_against": 0,
+      "first_observed": "2026-02-28",
+      "last_updated": "2026-02-28",
+      "data_points": [
+        "2026-02-27郑商所604回测: 总权金<10的配对(SA3.0/FG3.0/SH4.0/PF4.0)无实战价值; 总权金刚过10(10~13.5)的远虚值配对平均亏7.1%; 总权金29.5的近平值纯碱虽盈利但安全边际仅1.8%OTM太危险"
+      ]
     }
   ],
+  "expiration_calendar": {
+    "description": "商品期权到期日规则与日历，用于准确计算DTE",
+    "rules": {
+      "CZCE_major": {
+        "exchange": "郑商所",
+        "applies_to": "SA,FG,TA,MA,SR,CF,OI,RM,SM,SF,SH,PF,PK,UR等大多数品种",
+        "rule": "标的期货合约交割月份前一个月第15个日历日之前(含该日)的倒数第3个交易日",
+        "effective_from": "2401合约起"
+      },
+      "CZCE_special": {
+        "exchange": "郑商所",
+        "applies_to": "AP(苹果),CJ(红枣),PX(对二甲苯)",
+        "rule": "标的期货合约交割月份前两个月最后一个日历日之前(含该日)的倒数第3个交易日",
+        "note": "比大多数品种早约2周到期"
+      },
+      "DCE": {
+        "exchange": "大商所",
+        "applies_to": "m,y,p,i,rb,jm,jd,lh,pp,l,v,eb,eg等",
+        "rule": "标的期货合约交割月份前一个月的第12个交易日",
+        "effective_from": "2501合约起(旧规则为第5个交易日)"
+      },
+      "SHFE": {
+        "exchange": "上期所",
+        "applies_to": "au,ag,cu,al,zn,pb,ni,sn,ru,fu,bu,sp,ao等",
+        "rule": "标的期货合约交割月前第一月的倒数第5个交易日"
+      },
+      "INE": {
+        "exchange": "能源中心",
+        "applies_to": "sc(原油)",
+        "rule": "标的期货合约交割月前第一月的倒数第13个交易日"
+      },
+      "GFEX": {
+        "exchange": "广期所",
+        "applies_to": "si(工硅),lc(碳酸锂)",
+        "rule": "标的期货合约交割月份前1个月的第5个交易日"
+      }
+    },
+    "computed_dates": {
+      "as_of": "2026-02-28",
+      "contract_604": {
+        "CZCE_major":  {"expiry": "2026-03-11", "DTE": 11, "calc": "3月15日前10个交易日的倒数第3个"},
+        "CZCE_special": {"expiry": "2026-02-25", "DTE": -3, "calc": "已到期(2月28日前交易日倒数第3个)"},
+        "DCE":          {"expiry": "2026-03-17", "DTE": 17, "calc": "3月第12个交易日"},
+        "SHFE":         {"expiry": "2026-03-25", "DTE": 25, "calc": "3月倒数第5个交易日"},
+        "INE":          {"expiry": "2026-03-13", "DTE": 13, "calc": "3月倒数第13个交易日"},
+        "GFEX":         {"expiry": "2026-03-06", "DTE": 6,  "calc": "3月第5个交易日"}
+      },
+      "contract_605": {
+        "CZCE_major":  {"expiry": "2026-04-13", "DTE": 44, "calc": "4月15日前10个交易日的倒数第3个"},
+        "DCE":          {"expiry": "2026-04-17", "DTE": 48, "calc": "4月第12个交易日"},
+        "SHFE":         {"expiry": "2026-04-24", "DTE": 55, "calc": "4月倒数第5个交易日"}
+      },
+      "dte_lte_14_on_20260228": ["CZCE_major(604)=11天", "INE(604)=13天", "GFEX(604)=6天"],
+      "note": "DTE按日历天计算(含周末)。实际到期日可能因节假日微调，以交易所官方公告为准"
+    },
+    "night_session_hours": {
+      "SHFE_precious": {"products": "au,ag", "hours": "21:00-02:30", "duration_h": 5.5},
+      "SHFE_base_metal": {"products": "cu,al,zn,pb,ni,sn", "hours": "21:00-01:00", "duration_h": 4.0},
+      "SHFE_other": {"products": "ru,fu,bu,sp,ao,rb", "hours": "21:00-23:00", "duration_h": 2.0},
+      "CZCE": {"products": "SA,FG,TA,MA,SR,CF,OI,RM,SM,SF,SH,PF,PK,UR等", "hours": "21:00-23:30", "duration_h": 2.5},
+      "DCE": {"products": "m,y,p,i,jm,pp,l,v,eb,eg,jd,lh等", "hours": "21:00-23:00", "duration_h": 2.0},
+      "INE": {"products": "sc(原油)", "hours": "21:00-02:30", "duration_h": 5.5},
+      "note": "郑商所期权夜盘实际数据到22:59(提前1分钟)"
+    }
+  },
   "parameters": {
     "ag_far_otm_net_delta": {
       "value": 0.076,
@@ -249,6 +364,18 @@
       "session": "Put钉死→暴涨两阶段信号",
       "summary": "发现Put钉死后的暴涨阶段: P17000在145钉死53分钟后，期货回调147点触发Put爆发到197(+36%)。关键发现: 期货回调时价格之和反而大涨(294→337)，因为Put暴涨>Call下跌。这是做多宽跨的最大利润来源，而非期货上涨阶段",
       "changes": "新增B011(两阶段信号), B012(Put暴涨后高位平台)"
+    },
+    {
+      "date": "2026-02-28",
+      "session": "到期日历与DTE修正",
+      "summary": "添加完整的商品期权到期日规则(5个交易所)和计算后的604/605到期日历。修正之前DTE估算的严重错误(郑商所604实际DTE=11天,非3~7天)。更新B013增加郑商所专项回测数据",
+      "changes": "新增expiration_calendar(含rules/computed_dates/night_session_hours); B013更新郑商所604回测数据(同一夜盘不重复计evidence); 版本1.2→1.3"
+    },
+    {
+      "date": "2026-02-28",
+      "session": "知识库扩展与规则沉淀",
+      "summary": "知识库范围从'价格之和运动规律'扩展为'期权研究'全领域。沉淀theta计算方法(每天6小时交易)和选对门槛规则(总权金≥10,刚过门槛即可). 修正evidence重复计数错误(同一夜盘数据不论分析几次都只算1条证据)",
+      "changes": "meta.description扩展; 新增B014(theta计算方法), B015(选对门槛规则); 版本1.3→1.4"
     }
   ]
 }

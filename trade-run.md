@@ -194,6 +194,16 @@ cd /Users/zhangxiaoyu/Downloads/trade2026 && python main.py live \
 - 如果成功：提取关键指标（盈亏、交易次数等）
 - 如果失败：展示错误信息并给出修复建议
 
+## 到期日历
+
+系统内置精确的到期日历（`infra/expiry/option_expiry_calendar.py`），按交易所规则计算：
+- **SHFE/INE**: 交割月前一个月的**倒数第5个**交易日
+- **DCE**: 交割月前一个月的**第5个**交易日
+- **CZCE**: 交割月前一个月的**第3个**交易日
+- **GFEX**: 同SHFE
+
+节假日数据在 `infra/config/trading_holidays.csv`（2025-2026年完整），确保到期日计算准确。
+
 ## 注意事项
 
 1. 项目根目录固定为 `/Users/zhangxiaoyu/Downloads/trade2026/`
