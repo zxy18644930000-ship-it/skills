@@ -4,7 +4,7 @@
     "created": "2026-02-28",
     "description": "期权研究知识库 - 涵盖价格之和运动规律、交易策略、VRP策略、市场结构、到期日历等，贝叶斯持续更新",
     "product": "全市场商品期权(起源于ag白银)",
-    "update_count": 20
+    "update_count": 21
   },
   "beliefs": [
     {
@@ -1019,7 +1019,7 @@
       "id": "B024",
       "category": "VRP全市场策略",
       "statement": "基于VRP(IV-RV)的全市场ATM跨式卖出策略经Walk-Forward验证零过拟合. 每天扫描48品种→选VRP Top-3→入场腿比≤1.5x→21:00卖出ATM跨式→次日14:50平仓. 两条路线: 稳健(DTE30-60)OOS Sharpe 12.56/WR 89.9%/均PnL+2.82%, 激进(DTE≤7, 筛选后)OOS Sharpe 5.93/WR 72.7%/均PnL+7.14%. 止盈=权利金/DTE×系数(theta衰减), 止损=高价腿/低价腿≥阈值(腿比失衡). 入场腿比筛选(≤1.5x)是关键: DTE≤7有40%交易入场腿比>1.5x, 筛掉后Sharpe从5.68提升至5.93.",
-      "confidence": 0.90,
+      "confidence": 0.9,
       "evidence_for": 1689,
       "evidence_against": 451,
       "first_observed": "2026-03-07",
@@ -1066,6 +1066,21 @@
         "实盘滑点和流动性: ATM跨式bid/ask价差对PnL的影响?",
         "集成到工作台: VRP扫描按钮需要实时计算VRP并推荐Top-N"
       ]
+    },
+    {
+      "id": "B025",
+      "category": "风险管理",
+      "statement": "当交易系统成熟后(各品种胜率/赔率稳定可估),应使用凯利公式(Kelly Criterion)分配仓位: f* = (bp - q) / b, 其中b=赔率, p=胜率, q=1-p. 凯利公式是信息论最优下注比例,能最大化长期复合增长率,同时避免过度下注导致的破产风险",
+      "confidence": 0.6,
+      "evidence_for": 1,
+      "evidence_against": 0,
+      "first_observed": "2026-03-07",
+      "last_updated": "2026-03-07",
+      "data_points": [
+        "2026-03-07 用户洞察: 交易系统足够成熟时用凯利公式分配仓位",
+        "凯利公式前提: 需要稳定的胜率和赔率估计, 目前各品种回测数据(B021/B024)已有初步估计但尚未实盘验证"
+      ],
+      "note": "关联B018(棕榈油89%胜率)、B021(CF/SA 95-100%胜率)、B024(VRP策略) — 这些策略的胜率/赔率数据是凯利公式的输入. 实际应用建议用半凯利(f*/2)降低波动. 跨学科: 凯利公式源自信息论(Claude Shannon), 与赌场优势、保险精算同源"
     }
   ],
   "expiration_calendar": {
@@ -1398,6 +1413,12 @@
       "session": "B024入场腿比筛选(用户经验验证)",
       "summary": "用户指出入场时不应让高价腿>低价腿1.5倍, 否则不是跨式是赌单边. 回测验证: DTE≤7有40%(451笔)入场腿比>1.5x, 筛掉后OOS Sharpe 5.68→5.93, WR 69.2%→72.7%. DTE30-60天然平衡仅2.4%超标. 入场腿比≤1.5x写入B024硬性入场条件",
       "changes": "B024 statement/strategy更新(加入入场腿比≤1.5x规则); evidence_against 0→451; data_points添加Phase5; update_count 19→20"
+    },
+    {
+      "date": "2026-03-07",
+      "session": "用户洞察录入",
+      "summary": "新增B025: 凯利公式仓位管理(系统成熟后启用)",
+      "changes": "新增B025(风险管理, 0.60)"
     }
   ]
 }
