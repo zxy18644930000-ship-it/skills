@@ -4,7 +4,7 @@
     "created": "2026-02-28",
     "description": "期权研究知识库 - 涵盖价格之和运动规律、交易策略、VRP策略、市场结构、到期日历等，贝叶斯持续更新",
     "product": "全市场商品期权(起源于ag白银)",
-    "update_count": 38
+    "update_count": 42
   },
   "beliefs": [
     {
@@ -1231,7 +1231,7 @@
         "v5可靠Top10: PP13.73/SN13.59/PG13.20/L12.19/RU11.83/EB11.20/RB11.08/OI10.99/NI10.23/V10.00",
         "脚本: /tmp/grid_backtest_v5.py, 结果: /tmp/*_grid_v5.json"
       ],
-      "note": "用户洞察: 0.3θ止盈在低权利金品种上=bid-ask刷单, close价在买一/卖一间跳动就'触发TP', 实盘不可执行. 这是回测与实盘最大的鸿沟. 关联B036(bid-ask教训)"
+      "note": "用户洞察: 0.3θ止盈在低权利金品种上=bid-ask刷单, close价在买一/卖一间跳动就'触发TP', 实盘不可执行. 已被v6(B037)升级: DTE分桶后48品种均可用. 关联B036(bid-ask教训)B037(v6)"
     },
     {
       "id": "B034",
@@ -1283,7 +1283,7 @@
         "RM菜粕: N21:00 TP1.2θ SL不设 Sharpe=6.11 WR=72.8% N=723",
         "CU铜: D09:00 TP0.3θ SL不设 Sharpe=5.87 WR=85.2% N=453"
       ],
-      "note": "v5修正版, 已排除bid-ask假信号. 关联B033(全局分析)B036(教训)"
+      "note": "v5修正版, 已排除bid-ask假信号. 已被v6(B037)升级: DTE分桶后多数品种Sharpe提升2-4倍. 关联B033(全局分析)B036(教训)B037(v6 DTE维度)"
     },
     {
       "id": "B036",
@@ -1302,6 +1302,79 @@
         "本质: 回测Sharpe越高越要警惕, 可能是数据粒度不足导致的伪alpha"
       ],
       "note": "用户原创洞察. 这是量化回测中最常见的陷阱之一: 用mid/close价回测忽略execution reality. 跨学科联系: 类似物理学中的'观测者效应'——你的测量工具(close价)本身就有误差(bid-ask), 当信号小于误差时, 测到的都是噪音不是信号."
+    },
+    {
+      "id": "B037",
+      "category": "策略参数优化",
+      "statement": "v6回测: DTE是日内宽跨卖出的关键隐藏维度. 加入5个DTE桶(≤7/8-14/15-30/31-60/>60)后, 48品种全部有可用参数(v5仅19个). DTE15-60是黄金区间(33/48品种最优桶在此). CF从ALL Sharpe8.7→DTE8-14 Sharpe20.6(+136%), ZN从ALL→DTE15-30 Sharpe43.5. 最优参数随DTE桶变化: 短DTE偏小TP快进快出, 长DTE可用更大TP系数.",
+      "confidence": 0.9,
+      "evidence_for": 48,
+      "evidence_against": 0,
+      "first_observed": "2026-03-09",
+      "last_updated": "2026-03-09",
+      "data_points": [
+        "v6网格: 5入场×8TP×7SL×6DTE桶=1680组合/品种, 48品种共80640组合",
+        "DTE桶分布: DTE≤7(13品种有数据), 8-14(17), 15-30(44), 31-60(42), >60(14)",
+        "超级品种(Sharpe≥30): SH烧碱DTE15-30=43.6, ZN锌DTE15-30=43.5, RU橡胶DTE>60=40.3, V-PVC DTE8-14=34.6, PX对二甲苯DTE15-30=33.7, PF短纤DTE8-14=32.5, NI镍DTE≤7=31.2, RM菜粕DTE31-60=30.2, MA甲醇DTE15-30=28.2",
+        "DTE维度的核心价值: 同一品种不同DTE桶的Sharpe差异可达5倍. v5混合ALL DTE掩盖了很多品种的真实alpha",
+        "参数DTE相关性: 短DTE(≤14)多用0.3-0.5θ快止盈; 中DTE(15-60)更多0.5-1.0θ; 长DTE(>60)可以1.0-1.5θ",
+        "止损也DTE相关: 短DTE不设止损(日内波动有限); 长DTE需要2.0-3.5x腿比止损",
+        "脚本: /tmp/grid_backtest_v6.py, 结果: /tmp/*_grid_v6.json",
+        "已整合到工作台: 今日计划按钮动态计算当前DTE→匹配最优桶参数"
+      ],
+      "note": "关键升级: v5因tick过滤淘汰了29/48品种(其中很多是DTE混淆导致的假阳性/假阴性). v6用DTE分桶解决了这个问题——短DTE日期权利金低容易触tick过滤, 但长DTE同品种权利金高完全可用. 跨学科联系: 类似统计学的辛普森悖论——混合数据看到的趋势, 分层后可能完全不同甚至反转. 关联B033(v5)B035(v5参数)B036(tick教训)B024(theta止盈法)"
+    },
+    {
+      "id": "B038",
+      "category": "品种策略",
+      "statement": "AO氧化铝夜盘Scalp策略: 23:15进仓卖出宽跨→00:50强平, θ止盈+腿比止损, DTE5-19天为优质区间(胜率83-100%/均PnL+1.5~7.5%), DTE≥20收益骤降",
+      "confidence": 0.82,
+      "evidence_for": 734,
+      "evidence_against": 0,
+      "first_observed": "2026-03-09",
+      "last_updated": "2026-03-10",
+      "data_points": [
+        "回测数据: SHFE AO.parquet全部历史, 734笔交易",
+        "最优进仓: 23:15 (开盘2h15m后波动趋稳, Sharpe 4.15)",
+        "止盈: TP=权利金/DTE×0.5 (0.5x·θ), 触发率35.8%, 触发即锁利",
+        "止损: 腿比≥5.0x触发率0%——AO双腿天然平衡, 实质不需要止损",
+        "强平: 00:50 (收盘前10min), Sharpe 4.52",
+        "整体: Sharpe 4.78, 胜率45.6%, 均PnL +1.03%",
+        "DTE分层: DTE5-19天全部胜率≥75%, 其中DTE5-10最强(均PnL+5%), DTE11-19稳定(均PnL+2%). DTE≥20胜率骤降至40-60%",
+        "DTE1-5天 Sharpe仅3.2/胜率38% (太近不稳定), DTE>20 Sharpe<4 (θ太慢)",
+        "入场过滤: 进仓腿比≤3.0x, 确保是宽跨而非赌单边",
+        "关键洞察: AO上期所夜盘21:00-01:00, 23:00后流动性下降但仍有成交, 适合scalp",
+        "2026-03-10补充验证: DTE15=83.3%胜率/Sharpe24, DTE16=100%/Sharpe71, 与DTE14(75%)无断崖. 真正分界线在DTE20"
+      ],
+      "backtest_script": "/tmp/ao_night_scalp_v2.py",
+      "backtest_result": "/tmp/ao_night_scalp_v2.json",
+      "report": "/tmp/ao_night_scalp_v2_report.html",
+      "note": "TP/SL使用用户原创的θ衰减止盈+腿比止损方法论, 非传统百分比. AO夜盘特性: 双腿极其平衡(腿比几乎不超过2x), 与CF/SA等品种差异显著"
+    },
+    {
+      "id": "B039",
+      "category": "策略参数优化",
+      "statement": "夜盘23:00+ ATM宽跨卖出网格回测(9品种): theta衰减止盈6:3击败固定百分比止盈. 最优公式TP=权利金/DTE×0.3+腿比SL2-3x. 最佳品种NI(Sharpe10.1/WR71%), AG(11.4/88%), AL(11.0/80%), CU(10.3/83%). 进场+45min(23:45)是多数品种最优入场时间.",
+      "confidence": 0.85,
+      "evidence_for": 9,
+      "evidence_against": 0,
+      "first_observed": "2026-03-10",
+      "last_updated": "2026-03-10",
+      "data_points": [
+        "回测范围: SHFE(AU/AG/CU/AL/ZN/NI/SN/PB→02:30或01:00) + INE(SC→02:30), 全部历史期权1分钟K线",
+        "数据量: AU 2.13亿行/1282sessions, AG 1.5亿行/633s, CU 2.1亿行/1330s, AL 2.5亿行/1195s, ZN 1.17亿行/1195s, NI 1800万行/234s, SN 960万行/234s, PB 1080万行/234s, SC 7100万行/993s",
+        "网格v1(固定百分比TP): entry_offset×[0,15,30,45,60,90,120,150]min + TP%×[3,5,8,10,15,20,30,无] + SL腿比×[1.5,2.0,3.0,5.0,无] + FC×[0,5,10,15,30]min",
+        "网格v2(theta衰减TP): entry_offset同上 + tp_coeff×[0.3,0.5,0.8,1.0,1.5,2.0,无] + SL腿比×[1.5,2.0,3.0,4.0,5.0,无] + FC同上 + MIN_TICKS=3过滤",
+        "v1 vs v2对比(最优Sharpe): AG 8.6→11.4(θ✓), AL 8.2→11.0(θ✓), AU 5.0→5.6(θ✓), CU 9.1→10.3(θ✓), ZN 7.3→8.6(θ✓), PB 4.4→8.5(θ✓), NI 10.9→10.1(固定%✓), SC 9.5→8.3(固定%✓), SN 8.8→7.5(固定%✓). theta衰减6:3胜",
+        "v2各品种最优参数: AG(+45m/θ0.3/SL2.0/Sharpe11.4/WR88%/DTE≈10), AL(+45m/θ0.3/SL3.0/Sharpe11.0/WR80%/DTE≈10), CU(+45m/θ0.3/SL3.0/Sharpe10.3/WR83%/DTE≈16), NI(+45m/θ0.3/SL3.0/Sharpe10.1/WR71%/DTE≈32), SC(+90m/θ0.3/SL2.0/Sharpe8.3/WR82%/DTE≈17), ZN(+45m/θ0.3/SL3.0/Sharpe8.6/WR73%/DTE≈10), SN(+30m/θ0.5/SL5.0/Sharpe7.5/WR71%/DTE≈22), AU(+15m/θ0.3/SL5.0/Sharpe5.6/WR74%/DTE≈31), PB(+45m/θ0.5/SL无/Sharpe8.5/WR68%/DTE≈6)",
+        "跨品种共同规律: ①tp_coeff=0.3是7/9品种最优(SC和SN用0.3-0.5); ②01:00收盘品种偏好+45m(23:45进场), 02:30品种SC偏好+90m(00:30进场); ③SL腿比2.0-3.0为主(PB例外无SL); ④强平偏移影响小(0-15min差异<5%Sharpe)",
+        "theta衰减优势解释: 固定%不分DTE——DTE=10和DTE=60用同一个3%目标, 但DTE=10每日θ=10%, DTE=60每日θ=1.67%, 差6倍. theta公式自动适配: DTE10时TP=3%/bar, DTE60时TP=0.5%/bar",
+        "入场腿比中位1.17, 13.9%超过1.5x. 23:00后市场已趋平衡, 入场质量天然较高"
+      ],
+      "backtest_scripts": ["/tmp/late_night_backtest.py", "/tmp/late_night_bt_v2.py"],
+      "backtest_results": ["/tmp/late_night_grid.parquet", "/tmp/late_night_v2.parquet"],
+      "reports": ["/tmp/late_night_report.html", "/tmp/late_night_v2_report.html"],
+      "note": "核心发现: theta衰减止盈(用户原创)在6/9品种上优于固定百分比, 验证了B024提出的TP/SL方法论在日内scalp场景同样有效. 与B038(AO夜盘scalp)互补——B038覆盖21:00-01:00全程, B039聚焦23:00+深夜段. 与B037(v6 DTE维度)一致: DTE是关键隐藏变量, theta公式通过/DTE自然纳入了这一维度. 跨学科: 类似物理学中的归一化——用DTE归一化TP目标, 就像用温度归一化反应速率(Arrhenius方程), 消除了量纲不一致的噪音"
     }
   ],
   "expiration_calendar": {
@@ -1670,6 +1743,11 @@
       "date": "2026-03-09",
       "action": "add B033+B034",
       "detail": "CF棉花+AG白银四维网格回测(入场时机/TP/SL/仓位管理), 280组参数"
+    },
+    {
+      "date": "2026-03-10",
+      "action": "新增B039(夜盘23:00+ ATM宽跨卖出网格回测)",
+      "details": "9品种(AU/AG/CU/AL/ZN/NI/SN/PB/SC)全历史1min回测, v1固定%TP vs v2 theta衰减TP对比. theta衰减6:3胜, 最优tp_coeff=0.3+SL腿比2-3x+进场+45min(23:45). AG Sharpe11.4/WR88%最亮眼"
     }
   ]
 }
