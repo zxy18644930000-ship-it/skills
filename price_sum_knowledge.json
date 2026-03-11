@@ -4,7 +4,7 @@
     "created": "2026-02-28",
     "description": "期权研究知识库 - 涵盖价格之和运动规律、交易策略、VRP策略、市场结构、到期日历等，贝叶斯持续更新",
     "product": "全市场商品期权(起源于ag白银)",
-    "update_count": 42
+    "update_count": 43
   },
   "beliefs": [
     {
@@ -1371,10 +1371,91 @@
         "theta衰减优势解释: 固定%不分DTE——DTE=10和DTE=60用同一个3%目标, 但DTE=10每日θ=10%, DTE=60每日θ=1.67%, 差6倍. theta公式自动适配: DTE10时TP=3%/bar, DTE60时TP=0.5%/bar",
         "入场腿比中位1.17, 13.9%超过1.5x. 23:00后市场已趋平衡, 入场质量天然较高"
       ],
-      "backtest_scripts": ["/tmp/late_night_backtest.py", "/tmp/late_night_bt_v2.py"],
-      "backtest_results": ["/tmp/late_night_grid.parquet", "/tmp/late_night_v2.parquet"],
-      "reports": ["/tmp/late_night_report.html", "/tmp/late_night_v2_report.html"],
+      "backtest_scripts": [
+        "/tmp/late_night_backtest.py",
+        "/tmp/late_night_bt_v2.py"
+      ],
+      "backtest_results": [
+        "/tmp/late_night_grid.parquet",
+        "/tmp/late_night_v2.parquet"
+      ],
+      "reports": [
+        "/tmp/late_night_report.html",
+        "/tmp/late_night_v2_report.html"
+      ],
       "note": "核心发现: theta衰减止盈(用户原创)在6/9品种上优于固定百分比, 验证了B024提出的TP/SL方法论在日内scalp场景同样有效. 与B038(AO夜盘scalp)互补——B038覆盖21:00-01:00全程, B039聚焦23:00+深夜段. 与B037(v6 DTE维度)一致: DTE是关键隐藏变量, theta公式通过/DTE自然纳入了这一维度. 跨学科: 类似物理学中的归一化——用DTE归一化TP目标, 就像用温度归一化反应速率(Arrhenius方程), 消除了量纲不一致的噪音"
+    },
+    {
+      "id": "B040",
+      "category": "进出场时间优化",
+      "statement": "VRP ATM跨式卖出最佳时间组合: 21:00进仓→次日11:25出仓(Sharpe 1.92, WR 64.2%, 均PnL +1.30%). 当晚出仓仅22:55可行(Sharpe 1.81/WR 53.6%/PnL +0.48%), 23:55和00:55全部负Sharpe. 次日出仓显著优于当晚, 但14:55不如11:25(下午回吐效应).",
+      "confidence": 0.82,
+      "evidence_for": 48,
+      "evidence_against": 0,
+      "first_observed": "2026-03-10",
+      "last_updated": "2026-03-10",
+      "data_points": [
+        "回测范围: 37品种(CZCE/DCE/SHFE/INE全覆盖), 1075交易日, 2019-10~2025-08, 2-pass架构处理6亿+行数据",
+        "网格: 6进仓(21:00/21:15/21:30/22:00/22:30/23:00) × 8出仓(当晚22:55/23:55/00:55 + 次日09:30/10:30/11:25/13:35/14:55) = 48组合",
+        "信号: 每日21:05 VRP扫描→排名Top-3→卖ATM跨式(put-call parity定价)",
+        "Top 3 Sharpe: 21:00→次日11:25(1.92), 21:00→当晚22:55(1.81), 21:00→次日10:30(1.77)",
+        "进仓延迟惩罚: 每延迟15min Sharpe损失约0.10-0.15. 21:00=1.92, 21:15=1.69, 21:30=1.64, 22:00=1.57, 22:30=1.46",
+        "当晚出仓: 22:55是唯一正值(Sharpe 1.81), 但max_loss仅-47%(风控极佳). 23:55全部负Sharpe(-0.98~-1.91). 00:55接近零",
+        "次日出仓: 11:25最优(Sharpe 1.92), 10:30次之(1.77), 09:30尚可(1.55). 13:35开始下降(1.69), 14:55最差(1.32)",
+        "下午回吐效应: 从11:25到14:55, Sharpe从1.92降到1.32, 均PnL从1.30%降到0.98%, 说明下午时段VRP利润被回吐",
+        "23:00进仓虽样本仅329笔(大多品种已收盘), 但Sharpe不错(次日10:30=1.76), 可作为补充信号",
+        "各进仓时间×次日11:25: 21:00(1.92)>21:15(1.69)>21:30(1.64)>23:00(1.64)>22:00(1.57)>22:30(1.46). 23:00反超22:00/22:30, 可能因为23:00后剩余品种(SHFE/INE)质量更高"
+      ],
+      "backtest_scripts": [
+        "/tmp/vrp_timing_v6.py"
+      ],
+      "backtest_results": [
+        "/tmp/vrp_timing_grid.json"
+      ],
+      "reports": [
+        "/tmp/vrp_timing_report.html"
+      ],
+      "note": "与B024(VRP策略体系)互补: B024验证了VRP选品种的有效性, B040回答了'什么时候进出仓最优'. 与B039(深夜scalp)互补: B039是23:00+品种的精细化网格, B040是21:00起全市场的时间维度. 核心洞察: 期权卖方的时间衰减利润在夜间~次日上午积累最快, 下午开始被gamma反噬. 跨学科: 类似热力学中的熵增过程——theta衰减在低波动时段(夜间+次日上午)是单调的, 但下午市场活跃度回升后gamma的随机扰动开始主导, 类似高温下分子运动加剧打破了有序衰减"
+    },
+    {
+      "id": "B041",
+      "category": "日内多次交易",
+      "statement": "日内多次循环卖出宽跨(浅虚值OTM3-5%): 全市场43品种验证, Tier1(10品种PnL>=2000+P50>=8tick): cu/pg/br/CF/ps/TA/p/OI. 最优参数集中在OTM3%/TP2-3x/NoSL/Re0.9-1.0. 过滤<=3tick后PnL保留率95-100%. 非刷单, 浅虚值价格之和足够大(300-5000点).",
+      "confidence": 0.88,
+      "evidence_for": 43,
+      "evidence_against": 1,
+      "first_observed": "2026-03-11",
+      "last_updated": "2026-03-11",
+      "data_points": [
+        "全市场回测: 43品种, 5交易所(CZCE/DCE/SHFE/INE/GFEX)",
+        "Tier1高质量(10): SHFE.cu(PnL=68046/P50=56.0tick), DCE.pg(PnL=6741/P50=19.0tick), SHFE.br(PnL=5548/P50=21.0tick), CZCE.CF(PnL=5342/P50=12.0tick), GFEX.ps(PnL=3937/P50=21.0tick), CZCE.TA(PnL=3902/P50=8.5tick), DCE.p(PnL=2870/P50=10.0tick), CZCE.OI(PnL=2522/P50=11.0tick), SHFE.al(PnL=2500/P50=8.9tick), DCE.y(PnL=2460/P50=11.0tick)",
+        "Tier2中等(15): SHFE.zn(PnL=13514), SHFE.ru(PnL=8660), DCE.lh(PnL=1870), CZCE.SM(PnL=1861), CZCE.PX(PnL=1664), CZCE.PK(PnL=1440), CZCE.AP(PnL=1238), CZCE.ZC(PnL=996), CZCE.RM(PnL=842), DCE.l(PnL=833), SHFE.ao(PnL=707), GFEX.si(PnL=650), CZCE.MA(PnL=524), CZCE.PF(PnL=518), SHFE.pb(PnL=510)",
+        "最优OTM: 3%占33/43, 5%占8",
+        "最优TP: 3.0x占24, 2.0x占9, 1.0-1.5x占10",
+        "SL: NoSL占28, SL3x占8, SL5x占7",
+        "Re: 0.9(积极)占20, 1.0(中性)占19, 1.1(保守)占4",
+        "关键教训: 深度虚值(v2)P50=1tick→刷单; 浅虚值(v3)P50=8-56tick→真实alpha",
+        "tick验证: 所有结果附带P25/P50/P75分布+过滤后PnL, 保留率<90%的不可信"
+      ],
+      "backtest_scripts": [
+        "~/Scripts/ag_multi_trade_v3.py",
+        "~/Scripts/multi_trade_allmarket.py"
+      ],
+      "backtest_results": [
+        "~/Scripts/multi_trade_results/ (43个品种JSON)",
+        "~/Scripts/multi_trade_results/_ALL_SUMMARY.json"
+      ],
+      "reports": [
+        "~/Scripts/ag_multi_trade_report.html"
+      ],
+      "note": "全市场验证完成, 置信度提至0.82. 实盘建议: 优先Tier1品种(cu/zn/ru/pg/br/TA/p/OI/al/y), OTM3%/TP2-3x/NoSL或SL5x/Re1.0, 冷却10min. 注意: 未计滑点和手续费, 实盘收益需打折30-50%.",
+      "content": "日内多次循环卖出宽跨 v2(DTE分桶): 39个品种全市场回测, DTE作为搜索维度后24/43品种PnL提升, 平均+97%. DTE 30-60是黄金区间(36/39品种最优). Tier1(14个,PnL≥2000): cu铜114k/al铝16k/pg LPG13k/br丁二烯12k/p棕榈10k/zn锌9k/ru橡胶9k/CF棉花7k/ps聚苯5k/y豆油4k/TA PTA4k/OI菜油4k/SM锰硅3k/PX二甲苯2k. v1→v2关键改善: al+551%/p+240%/ao+130%/br+123%/pg+94%/cu+68%. 参数规律: OTM3%最优(34/39), TP1.0-3.0x, SL3.0-5.0x(v2发现有止损比v1的NoSL更好), Re0.9-1.0. 反刷单验证: P50>=7tick, 保留率95-100%. 实盘要求: 严格按DTE桶选合约, 未计滑点手续费需打折30-50%.",
+      "updates": [
+        {
+          "date": "2026-03-11",
+          "action": "v2 DTE分桶回测完成, confidence 0.82→0.88, 14个Tier1品种, 平均PnL提升97%"
+        }
+      ]
     }
   ],
   "expiration_calendar": {

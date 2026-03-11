@@ -32,9 +32,16 @@
 
 1. **复制最新文件到 skills 目录**
    ```
+   # 技能文件
    cp ~/.claude/commands/*.md ~/skills/
+   # 知识库
    cp ~/Scripts/price_sum_knowledge.json ~/skills/
    cp ~/Scripts/price_sum_pairs.json ~/skills/
+   # Claude 配置和记忆（换电脑恢复用）
+   mkdir -p ~/skills/claude-config/memory
+   cp ~/.claude/CLAUDE.md ~/skills/claude-config/
+   cp ~/.claude/settings.json ~/skills/claude-config/
+   cp ~/.claude/projects/-Users-zhangxiaoyu/memory/*.md ~/skills/claude-config/memory/
    ```
 
 2. **检查是否有变更**

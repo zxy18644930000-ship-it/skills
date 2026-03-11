@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Edit(*)",
+      "Write(*)",
+      "NotebookEdit(*)",
+      "WebSearch(*)",
+      "WebFetch(*)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash /Users/zhangxiaoyu/.claude/statusline-command.sh"
+  },
+  "effortLevel": "high"
+}
