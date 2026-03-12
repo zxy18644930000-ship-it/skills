@@ -2,6 +2,7 @@
 
 - **Language**: User communicates in Chinese (Mandarin), respond in Chinese
 - **Autonomy**: User prefers full autonomy — don't ask for confirmation, just execute
+- **资源安全**: 跑回测/重型任务前，**必须先 `ps aux -m | head -10`** 检查当前内存和CPU占用。16GB机器，绝不让总占用超80%
 - **对话记忆（事件驱动写入）**: 不等对话结束，有结论就立刻写。触发时机：①话题切换时存上一个话题的结论 ②任务完成时（回测/bug修复/功能上线）③产生关键决策或推翻旧认知时 ④用户说"记住这个"。MEMORY.md 当索引（控制100行内），详细内容按主题分文件
 
 # 记忆文件索引
@@ -14,6 +15,7 @@
 | `课程知识库.md` | 期权量化课程（28课时，0/28进度） |
 | `health.md` | 健康相关：体检结论、用药、健康决策 |
 | `conversations.md` | 对话摘要流水账（日期+一句话） |
+| `feedback_no_write_tool.md` | 禁止用Write覆盖已有代码文件，必须用Edit局部替换+立即commit |
 
 # Skills Repo 同步
 

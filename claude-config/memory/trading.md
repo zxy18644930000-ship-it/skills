@@ -46,6 +46,40 @@
 - **超级品种(Sharpe≥30)**: SH烧碱43.6/ZN锌43.5/RU橡胶40.3/V-PVC34.6/PX33.7/PF短纤32.5/NI镍31.2/RM菜粕30.2/MA甲醇28.2
 - **已整合到工作台**: 今日计划按钮动态计算DTE→匹配最优桶参数→Sharpe降序排列
 
+### B041 多品种日内宽跨 v1→v2 DTE分桶回测
+- **脚本**: `~/Scripts/multi_trade_allmarket.py`(v1), `~/Scripts/multi_trade_allmarket_v2.py`(v2)
+- **结果**: `~/Scripts/multi_trade_results_v2/` (39品种JSON + _ALL_SUMMARY)
+- **报告**: `~/Scripts/multi_trade_v2_report.html`
+- **v2新增**: DTE分桶 (1,7]/(7,15]/(15,30]/(30,60] 作为网格搜索维度
+- **核心发现**: DTE 30-60 确认为黄金区间(36/39品种最优), 平均PnL提升+97% vs v1
+
+### B042 腿背离均值回归策略 全市场回测 (重大发现!)
+- **脚本**: `~/Scripts/divergence_backtest.py` + `~/Scripts/divergence_report.py`
+- **结果**: `~/Scripts/divergence_results/` (52品种JSON + _ALL_SUMMARY)
+- **报告**: `~/Scripts/divergence_report.html`
+- **信号**: 高价腿方向 ≠ Sum方向 + IV(邻档OTM)不动 → 真背离
+- **策略A(均值回归/卖Sum)**: 51/52品种胜出(98%), 多品种216组参数100%盈利
+- **策略B(动量/买Sum)**: 1/52胜出(ad, 仅3天数据, 不具代表性)
+- **S级(PnL>3000+WR>65%)**: lc(碳酸锂,28350), ni(镍,6708)
+- **A级(PnL>1000+WR>60%)**: cu/ru/OI/p/ag/br/CF/zn/si/eb/ps/y/pg
+- **通用最优参数**: LB10, Comp≥1.0, Hold60m, TP0.5-1.0x, SL2.0x
+- **IV代理**: 用邻档OTM行权价(非ATM!), 处理非均匀行权价间距(cu等)
+- **结论**: 背离是均值回归信号, 实盘应卖出Sum; 动量策略在绝大多数品种亏损
+
+## 实盘观察与策略洞察
+
+### B042v2 夜盘23:00+ 循环ATM跨式卖出 (AG+AO)
+- **脚本**: `/tmp/late_night_loop_v2.py`, 结果: `/tmp/late_night_loop_v2.json`, 报告: `/tmp/late_night_loop_report.html`
+- **数据**: AG 632夜(2019-2025), AO 234夜(2024-2025)
+- **策略**: 23:15起入场ATM跨式卖出→TP/SL/FC出场→冷却5min→再入场循环
+- **AG最优**: +15m/TP0.8θ/SL5.0x, Sharpe=7.0, WR=79%, PnL=+1.42%, 3轮/晚
+- **AG过滤≤3tick后**: WR=75%, PnL=+1.26% — **衰减仅11%, 真实可靠**
+- **AG DTE30-60**: Sharpe=7.4, WR=80%, PnL=+1.50% — 黄金区间
+- **AO最优**: +15m/TP0.8θ/SL3.0x, Sharpe=6.3, WR=70%, PnL=+0.98%
+- **AO过滤≤3tick后**: WR=54%, PnL=+0.33% — **刷单问题严重, P50仅2tick**
+- **结论**: AG可用于实盘循环做(DTE30-60, 23:15入场, 1手); AO刷单风险高, 需谨慎
+- **关键发现**: SL越宽越好(5.0x>3.0x>2.0x), 夜盘波动有限误杀少; TP0.8θ最优平衡点
+
 ### B018/B019 棕榈油周五夜盘
 - **脚本**: `/tmp/p_allday_backtest.py` + `/tmp/p_friday_dte14.py`
 - **结论**: DTE≤7周五88.9%/+23% vs 非周五75.5%/+13%, 周五有显著优势

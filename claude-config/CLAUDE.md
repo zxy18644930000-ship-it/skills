@@ -54,8 +54,22 @@
 - **回测脚本加内存护栏** — 脚本开头加 `import resource; resource.setrlimit(resource.RLIMIT_AS, (8*1024**3, 8*1024**3))` 限制单进程最大8GB（macOS用psutil监控替代）
 - **写完回测脚本自查** — 上线前搜索代码中所有 `read_parquet`/`read_csv`，确认每个都有filters或columns参数
 
+### 回测常见Bug（踩过的坑，必须避免）
+1. **期权symbol带交易所前缀** — parquet中symbol格式是 `SHFE.ao2412C3300`，不是 `ao2412C3300`。解析前**必须strip掉交易所前缀**：`sym.split('.', 1)[-1]`
+2. **session排序: 日盘在前夜盘在后** — 同一日历日内，日盘(9:00-15:00)的bar排在夜盘(21:00-23:00)之前。如果用datetime排序，H1(前一行)可能指向错误的session
+3. **CTP结算价bar污染** — 交易所在22:59/23:00插入结算bar，价格是结算价(非最后成交价)，volume是全天累计。检测方法：相邻bar间隔>10分钟且volume跳变>2倍
+4. **pd.Timedelta vs datetime.timedelta** — 操作 `datetime.date` 对象时用 `datetime.timedelta(days=1)`，不要用 `pd.Timedelta(days=1)`，否则类型混乱导致groupby分裂
+
+### 多品种回测自动并行（必须遵守）
+跑多品种回测时，**先估算内存再决定并行度**，尽量用多进程加速：
+1. **估算单品种内存** — 先跑1个品种，用 `psutil` 或 `ps` 观察峰值RSS（通常1-3GB/品种）
+2. **计算可用内存** — `可用 = 16GB - 当前已用 - 2GB系统预留`，用 `psutil.virtual_memory().available` 获取
+3. **决定并行数** — `workers = min(可用内存 // 单品种峰值, CPU核数-1, 品种数)`，上限6进程
+4. **用 `multiprocessing.Pool(workers)` 或 `concurrent.futures.ProcessPoolExecutor`** 并行跑
+5. **每个子进程加内存护栏** — 单进程不超过4GB（`resource.setrlimit` 或 psutil监控）
+6. **逐品种释放内存** — 子进程处理完自动退出，内存随进程回收，比线程内 `del+gc` 更彻底
+
 ### 用户需注意：
-- **不要同时跑多个重型回测** — 一个全市场回测可能吃20-30GB，两个同时跑直接死机
 - **跑完的脚本及时关掉** — 长时间挂着的Python进程是内存黑洞
 - **跑重型任务前** — `ps aux --sort=-%mem | head` 看一眼当前占用
 
