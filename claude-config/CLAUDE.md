@@ -168,7 +168,7 @@ trade2026/
 │   └── runner_sim.py (77K)         # 仿真: 模拟撮合
 │
 ├── execution/                       # 执行层 — 智能执行器核心
-│   ├── executor.py (96K)            # 主执行器: 进仓/出仓/分轮/两腿渐进式
+│   ├── executor.py (96K)            # 主执行器: 进仓/出仓/分轮/两腿统一逻辑
 │   ├── oms.py (23K)                # 订单管理: 提交/撤销/改价/状态流转
 │   ├── algos.py (42K)              # 价格决策: ask/bid/激进抢位/宽价差插单
 │   ├── order_monitor.py (96K)      # 改价监控: L1跟踪/中间价变化/自动改价
@@ -235,7 +235,7 @@ Executor.execute_pair_entry(pair, volume)
       ├─ aggressive: 有空档时激进
       └─ sweep: 主动成交
 
-第二腿渐进式: 阶段1(3min中间价) → 阶段2(3min逼近bid)
+第二腿与第一腿统一逻辑（跟随L1 + queue_jump + 单量检测sweep）
 收盘前自动撤单 | 订单超时重试 | 崩溃后SQLite恢复
 ```
 
@@ -270,3 +270,39 @@ Executor.execute_pair_entry(pair, volume)
 - `volume_threshold`: 对手盘量阈值(默认10手)
 - `modify_cooldown`: 改价冷却时间
 - `close_cancel_seconds`: 收盘前撤单秒数(默认20)
+
+## ClawHub / OpenClaw 技能生态
+
+**ClawHub.ai** 是 OpenClaw（22万星开源AI Agent）的技能商店，13000+技能可用。
+
+### 技能本质
+- 技能 = 一个 `SKILL.md` 文件（Markdown + YAML frontmatter）
+- 与 Claude Code 的 `~/.claude/commands/*.md` 斜杠命令本质相同
+- 格式：YAML frontmatter（name/description/metadata）+ 正文指令
+
+### SKILL.md 结构
+```yaml
+---
+name: my-skill
+description: 技能描述
+metadata:
+  openclaw:
+    requires:
+      env: [API_KEY]
+      bins: [curl]
+    primaryEnv: API_KEY
+---
+（正文：具体的指令和步骤）
+```
+
+### 移植到 Claude Code 的方法
+1. **获取技能**：`clawhub search "关键词"` 或直接从 GitHub 抓 SKILL.md
+2. **提取指令**：取 SKILL.md 正文部分（跳过 OpenClaw 特有的 metadata）
+3. **适配格式**：写入 `~/.claude/commands/技能名.md`，即可用 `/技能名` 调用
+4. 如需环境变量，在本地配置对应的 API Key
+
+### 参考链接
+- 技能商店：https://clawhub.ai
+- GitHub仓库：https://github.com/openclaw/clawhub
+- 技能目录文档：https://openclawskillshub.org/docs
+- 集成指南：https://help.apiyi.com/en/clawhub-ai-openclaw-skills-registry-guide-en.html
