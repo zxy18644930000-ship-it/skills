@@ -2250,6 +2250,7 @@ app.layout = html.Div([
     dcc.Store(id='pairs-store', data=load_config()),
     dcc.Store(id='scorecard-collapsed', data=True),
     dcc.Store(id='loading-state', data={}),  # {product: start_timestamp}
+    dcc.Store(id='watchlist-ratio-limit-store', data=3.0, storage_type='local'),
 
     # 定时刷新
     dcc.Interval(id='timer', interval=REFRESH_MS, n_intervals=0),
@@ -2520,6 +2521,20 @@ def _send_strategy_command_file(product, endpoint, payload=None):
         return False, f'未知端点: {endpoint}'
     except Exception as e:
         return False, str(e)
+
+
+def _collect_watchlist_products(pairs):
+    """从自选列表中提取涉及的品种代码。"""
+    products = []
+    for pair in (pairs or []):
+        if not pair:
+            continue
+        call_sym = pair[0] if len(pair) > 0 else ''
+        put_sym = pair[1] if len(pair) > 1 else ''
+        product = _extract_product(call_sym) or _extract_product(put_sym)
+        if product:
+            products.append(product)
+    return sorted(set(products))
 
 
 def _start_strategy(product):
@@ -2974,6 +2989,69 @@ def on_trade_close_click(n_clicks, pair_json, volume, max_bid_sum):
 
 
 @app.callback(
+    Output('watchlist-ratio-limit-store', 'data'),
+    Output('watchlist-ratio-status', 'children'),
+    Input('watchlist-ratio-apply-btn', 'n_clicks'),
+    State('watchlist-ratio-limit-input', 'value'),
+    State('pairs-store', 'data'),
+    prevent_initial_call=True,
+)
+def apply_watchlist_ratio_limit(n_clicks, input_value, pairs):
+    """更新自选腿比上限，并下发到相关品种策略。"""
+    if not n_clicks:
+        return no_update, no_update
+
+    try:
+        ratio_limit = float(input_value)
+    except (TypeError, ValueError):
+        return no_update, html.Span('请输入有效数字', style={'color': '#FF4444', 'fontSize': '11px'})
+
+    if ratio_limit <= 0:
+        return no_update, html.Span('腿比上限必须大于0', style={'color': '#FF4444', 'fontSize': '11px'})
+
+    products = _collect_watchlist_products(pairs)
+    if not products:
+        return ratio_limit, html.Span(
+            f'已保存默认值 {ratio_limit:.1f}x，当前自选为空',
+            style={'color': '#FFD700', 'fontSize': '11px'}
+        )
+
+    applied = []
+    failed = []
+    waiting = []
+    payload = {'price_ratio_limit': ratio_limit}
+
+    for product in products:
+        if not _is_strategy_running(product):
+            waiting.append(product)
+            continue
+        ok, msg = _send_strategy_command(product, 'watchlist_settings', payload)
+        if ok:
+            applied.append(product)
+        else:
+            failed.append(f'{product}:{msg}')
+
+    if failed:
+        return ratio_limit, html.Span(
+            '部分失败 ' + ' | '.join(failed[:3]),
+            style={'color': '#FF4444', 'fontSize': '11px'}
+        )
+
+    status_parts = []
+    if applied:
+        status_parts.append(f'已应用到 {",".join(applied)}')
+    if waiting:
+        status_parts.append(f'待策略启动后再设 {",".join(waiting)}')
+    if not status_parts:
+        status_parts.append(f'已保存 {ratio_limit:.1f}x')
+
+    return ratio_limit, html.Span(
+        f'腿比上限 {ratio_limit:.1f}x: ' + ' | '.join(status_parts),
+        style={'color': '#00FF88' if applied else '#FFD700', 'fontSize': '11px'}
+    )
+
+
+@app.callback(
     Output('trade-rows-container', 'children'),
     Output('trade-row-count', 'data'),
     Input('add-trade-row-btn', 'n_clicks'),
@@ -3016,9 +3094,14 @@ def update_account_bar(_):
     Output('charts-container', 'children'),
     Input('pairs-store', 'data'),
     Input('timer', 'n_intervals'),
+    Input('watchlist-ratio-limit-store', 'data'),
 )
-def render_charts(pairs, _):
+def render_charts(pairs, _, watchlist_ratio_limit):
     manual_pairs = pairs or []
+    try:
+        watchlist_ratio_limit = float(watchlist_ratio_limit or 3.0)
+    except (TypeError, ValueError):
+        watchlist_ratio_limit = 3.0
     try:
         auto_pairs_raw = auto_select_pairs()
     except Exception:
@@ -3081,6 +3164,38 @@ def render_charts(pairs, _):
     nav_style = {'display': 'block', 'padding': '8px 12px', 'textDecoration': 'none',
                  'borderLeft': '3px solid transparent', 'cursor': 'pointer'}
     nav = []
+
+    nav.append(html.Div('自选过滤', style={
+        'padding': '8px 12px', 'color': '#4fc3f7', 'fontSize': '11px',
+        'fontWeight': 'bold', 'textTransform': 'uppercase', 'letterSpacing': '1px',
+        'borderBottom': '1px solid #4fc3f7'}))
+    nav.append(html.Div([
+        html.Div('两腿价比上限', style={'color': '#bbb', 'fontSize': '11px', 'marginBottom': '6px'}),
+        html.Div([
+            dcc.Input(
+                id='watchlist-ratio-limit-input',
+                type='number',
+                min=0.1,
+                step=0.1,
+                value=watchlist_ratio_limit,
+                style={
+                    'width': '54px', 'padding': '4px 5px', 'fontSize': '12px',
+                    'backgroundColor': '#0f1626', 'color': '#fff',
+                    'border': '1px solid #4fc3f7', 'borderRadius': '4px',
+                    'textAlign': 'center'
+                }
+            ),
+            html.Button('应用', id='watchlist-ratio-apply-btn', n_clicks=0, style={
+                'padding': '4px 8px', 'fontSize': '11px', 'cursor': 'pointer',
+                'backgroundColor': '#0a2f4a', 'color': '#4fc3f7',
+                'border': '1px solid #4fc3f7', 'borderRadius': '4px'
+            }),
+        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '6px'}),
+        html.Div(f'超 {watchlist_ratio_limit:.1f}x 自动删除', style={
+            'color': '#888', 'fontSize': '10px', 'marginTop': '6px'}),
+        html.Div(id='watchlist-ratio-status', style={
+            'color': '#00FF88', 'fontSize': '11px', 'marginTop': '6px', 'lineHeight': '1.4'}),
+    ], style={'padding': '8px 12px', 'borderBottom': '1px solid #2a2a4a'}))
 
     # 每日检查导航（sidebar顶部）
     if scorecard_nav_items:

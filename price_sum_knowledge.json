@@ -4,8 +4,8 @@
     "created": "2026-02-28",
     "description": "期权研究知识库 - 涵盖价格之和运动规律、交易策略、VRP策略、市场结构、到期日历等，贝叶斯持续更新",
     "product": "全市场商品期权(起源于ag白银)",
-    "update_count": 46,
-    "last_updated": "2026-03-15"
+    "update_count": 49,
+    "last_updated": "2026-03-19"
   },
   "beliefs": [
     {
@@ -1506,21 +1506,166 @@
       "note": "与B039互补: B039是单次进出(9品种网格), B043是循环做(AG+AO专项). AG循环做P50=4tick通过真实性检验, AO循环做P50=2tick失败. 实盘建议: AG DTE30-60, 23:15入场, TP0.8θ, SL5.0x(或不设SL), 1手循环做. AO维持B038单次scalp策略, 不宜循环. 跨学科: 频率与质量的tradeoff——AO追求高频但每笔太薄(类似高频做市), AG适中频率但每笔足够厚(类似swing scalp)"
     },
     {
-      "id": "ma_tangle_filter",
-      "name": "MA纠缠度宽跨安全过滤器",
-      "description": "1m+5m双时间框架20MA, LB10/T7. 纠缠状态入场卖OTM宽跨更安全，核心价值: ①消除尾部风险 ②Switch效应(趋势亏→纠缠赚)",
-      "confidence": 0.78,
+      "id": "B044",
+      "category": "技术指标验证",
+      "name": "40MA趋势确认层",
+      "statement": "在B043双时间框架20MA基础上增加40MA确认: 当20MA判定trending时, 若40MA仍为entangled(围绕40MA震荡), 则降级回纠缠. 规则: 20MA=trending+40MA=entangled→降级; 20MA=trending+40MA=trending→真趋势",
+      "confidence": 0.82,
       "evidence_count": 44,
-      "source": "B043",
-      "last_validated": "2026-03-15",
-      "notes": "OTM宽跨(4-8%虚值)直接验证: 44品种228830笔交易, 28/44(64%)信念成立. 15个品种具有Switch效应(趋势入场亏钱,纠缠入场赚钱). 26个品种双时间框架一致. AG尾部保护59.3x(趋势最差-267% vs 纠缠-28%). OTM比ATM更有效(64% vs 56%)",
+      "last_validated": "2026-03-17",
+      "notes": "B044回测(44品种): 信念成立30/44(68%). 共同品种B043→B044: 2/9→8/9. 被40MA降级交易(13-14%): 25/35品种降级组优于真趋势, 平均差值30m +0.192% 60m +0.299%. 降级组表现突出: SN+1.68% SM+1.49% LH+1.13% CJ+0.88% EB+0.63% CU+0.58%. 反例: PK-0.97% SF-1.02% AP-0.46% M-0.36% OI-0.32% NI-0.68%",
       "parameters": {
         "ma_1m": 20,
+        "ma_1m_confirm": 40,
         "ma_5m": 20,
+        "ma_5m_confirm": 40,
         "lookback": 10,
         "threshold": 7,
+        "override_rule": "20MA=trending且40MA=entangled→降级为entangled"
+      },
+      "override_stats": {
+        "pct_overridden": "13-14%",
+        "override_vs_trending_30m": "+0.192%",
+        "override_vs_trending_60m": "+0.299%",
+        "override_better_than_trending": "25/35品种"
+      }
+    },
+    {
+      "id": "B045",
+      "category": "技术指标验证",
+      "name": "MA纠缠度重新定义(穿越次数+偏向+40MA等距)",
+      "statement": "用三维判定替代旧LB10/T7: ①穿越次数(CrossCount)窗口内价格穿越MA20的次数, 穿越多=纠缠 ②偏向比例(Bias≥0.8)窗口内同侧占比 ③40MA等距确认(上下距离比≤2且K线数均衡). 综合: crossings≥CT→entangled; bias≥0.8且40MA确认趋势→trending; 其余→entangled",
+      "confidence": 0.86,
+      "evidence_count": 44,
+      "last_validated": "2026-03-17",
+      "notes": "B045回测(44品种): 信念成立38/44(86.4%). 网格测试CT=[2,3,4,5,6]: CT=2太松(74.9%纠缠,几乎无趋势样本); CT=3最优(平均Diff+0.684%,15品种选其为最优); CT=5/6成立率高但Diff小. 最优CT投票: CT3=15, CT6=12, CT5=10, CT4=6, CT2=1. 反例6品种: I/L/LH/PB/SF/UR",
+      "parameters": {
+        "ma_period": 20,
+        "ma_period_40": 40,
+        "lookback_1m": 50,
+        "lookback_5m": 20,
+        "bias_threshold": 0.8,
+        "ma40_dist_ratio": 2.0,
+        "ma40_count_bias": 0.7,
+        "cross_threshold_grid": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "best_cross_threshold": 3,
+        "hold_periods": [
+          30,
+          60
+        ],
+        "entangled_pct_at_ct3": "64.3%"
+      },
+      "grid_summary": {
+        "ct2": {
+          "belief_holds": "1/6",
+          "avg_diff": "-0.639%",
+          "entangled_pct": "74.9%"
+        },
+        "ct3": {
+          "belief_holds": "21/32",
+          "avg_diff": "+0.684%",
+          "entangled_pct": "64.3%",
+          "best": true
+        },
+        "ct4": {
+          "belief_holds": "22/38",
+          "avg_diff": "+0.330%",
+          "entangled_pct": "58.8%"
+        },
+        "ct5": {
+          "belief_holds": "28/42",
+          "avg_diff": "+0.357%",
+          "entangled_pct": "53.6%"
+        },
+        "ct6": {
+          "belief_holds": "30/44",
+          "avg_diff": "+0.248%",
+          "entangled_pct": "51.3%"
+        }
+      },
+      "top_products_ct3": {
+        "SR": "+6.221%",
+        "PG": "+5.600%",
+        "NI": "+4.245%",
+        "AG": "+3.859%",
+        "AL": "+3.778%"
+      }
+    },
+    {
+      "id": "B047",
+      "category": "交易策略",
+      "name": "趋势→纠缠转换瞬间卖出宽跨(时段内持仓)",
+      "statement": "期货MA由趋势转为纠缠的转换瞬间, 若价格之和有轻度向上偏离(布林线lite: price_sum > 双中轨之和*(1+pct)), 则卖出宽跨. 持仓到当前时段收盘, 期间止盈止损. 核心逻辑: 转换点IV仍高但即将回落, 卖方享受IV回归+Theta双收益",
+      "confidence": 0.92,
+      "evidence_count": 46,
+      "first_observed": "2026-03-19",
+      "last_updated": "2026-03-19",
+      "data_points": [
+        "2026-03-19 本地3品种验证: M/OI/RM 均正收益, boll_lite+tp5%较优",
+        "2026-03-19 MA20全市场回测(远程46品种): 46/46正收益, 平均PnL+4.52%. TOP: I+7.02%, PG+6.81%, AO+6.42%, SC+6.18%, P+5.96%",
+        "2026-03-19 MA10全市场回测(远程46品种): 45/46正收益(AD负), 平均PnL+3.93%. MA20优于MA10(31:13). MA10优势品种: SN+4.86%, PP+4.21%, FG+3.18%, SA+3.34%. MA10信号更多但单笔质量略低"
+      ],
+      "parameters": {
+        "transition_detection": "B046 classify_new(): prev=trending → curr∈{entangled, trans_touch, trans_cross, trans_oscillate}",
+        "boll_lite_pct_grid": [0.0, 0.02, 0.05],
+        "boll_period": 26,
+        "tp_pct_grid": [0.05, 0.10, 0.15],
+        "sl_ratio": 2.0,
+        "min_hold_minutes": 15,
+        "exit_logic": "止盈(百分比) / 止损(腿比) / 时段收盘强制平仓",
+        "session_rule": "日盘进仓→15:00前平仓; 夜盘进仓→夜盘收盘前平仓"
+      },
+      "backtest_script": "~/Scripts/B047_transition_session_backtest.py",
+      "backtest_results": {
+        "MA20_full_market": {
+          "ma_period": 20,
+          "products": 46,
+          "positive": 46,
+          "avg_pnl": "+4.52%",
+          "top5": "I+7.02% PG+6.81% AO+6.42% SC+6.18% P+5.96%"
+        },
+        "MA10_full_market": {
+          "ma_period": 10,
+          "products": 46,
+          "positive": 45,
+          "negative": ["AD"],
+          "avg_pnl": "+3.93%",
+          "top5": "UR+6.71% SC+6.38% SH+6.09% AG+5.62% CU+5.06%",
+          "ma10_better": "FG PP SN SA UR L PF PB PX SC SH Y AP",
+          "ma20_better": "AD AG AL AO AU BR C CJ CU EB EG I LC LH M NI OI P PG PK RB RM SI SM SR TA V ZN"
+        },
+        "conclusion": "MA20整体更优(31:13), 但MA10也普遍盈利. MA10更敏感(信号更多), MA20更精准(单笔更高)"
+      },
+      "note": "MA20和MA10两个版本均验证盈利. MA20: 46/46正, 平均+4.52%. MA10: 45/46正, 平均+3.93%. 实盘可根据个人观察习惯选择"
+    },
+    {
+      "id": "ma_tangle_filter",
+      "name": "MA纠缠度宽跨安全过滤器",
+      "description": "1m+5m双时间框架, B045三维判定(穿越次数+偏向比例+40MA等距)替代旧LB10/T7. 纠缠状态入场卖OTM宽跨更安全，核心价值: ①消除尾部风险 ②Switch效应 ③40MA过滤假趋势 ④穿越次数捕捉震荡(解决旧定义几乎选不出纠缠的问题)",
+      "confidence": 0.91,
+      "evidence_count": 90,
+      "source": "B043,B044,B045,B046,B047",
+      "last_validated": "2026-03-18",
+      "notes": "B043: 28/44(64%). B044: 40MA确认→30/44(68%). B045三维判定: 38/44(86.4%), 最优CT=3, 纠缠检出64.3%(vs旧定义几乎0%). 被降级交易平均比真趋势多赚0.2-0.3%. AG尾部保护59.3x. OTM比ATM更有效. B046: 转换3子类型(首触MA/反穿站稳/穿梭), 46品种全量, 30m安全池ΔPnL=+0.084%(76%正), 60m ΔPnL=+0.060%(63%正). 反穿站稳60m最强(+0.431%,83%品种正)",
+      "parameters": {
+        "ma_1m": 20,
+        "ma_1m_confirm": 40,
+        "ma_5m": 20,
+        "ma_5m_confirm": 40,
+        "lookback_1m": 50,
+        "lookback_5m": 20,
+        "cross_threshold": 3,
+        "bias_threshold": 0.8,
+        "ma40_dist_ratio": 2.0,
         "otm_range": "4-8%虚值, fallback 3-10%",
-        "usage": "过滤器(降尾部风险+Switch效应). 纠缠时入场, 趋势时回避. S级品种必须启用"
+        "override_rule": "20MA=trending且40MA=entangled→降级为entangled",
+        "usage": "过滤器(降尾部风险+Switch效应+40MA假趋势过滤). 纠缠时入场, 趋势时回避. S级品种必须启用"
       },
       "multidim_analysis": {
         "date": "2026-03-15",
@@ -1533,9 +1678,40 @@
           "exchange_cluster": "DCE和CZCE品种最多S级"
         },
         "grades": {
-          "S级_score_ge_60_共14个": ["Y(豆油,80.7)", "OI(菜油,79.6)", "EB(苯乙烯,78.7)", "AG(白银,77.0)", "PB(铅,76.9)", "SA(纯碱,76.4)", "LC(碳酸锂,76.3)", "M(豆粕,74.3)", "UR(尿素,73.2)", "PG(液化气,70.0)", "SN(锡,68.7)", "CF(棉花,62.5)", "SF(硅铁,61.6)", "ZN(锌,60.3)"],
-          "A级_score_45_59_共7个": ["RM(菜粕,58.5)", "SH(烧碱,57.5)", "MA(甲醇,56.5)", "NI(镍,55.5)", "TA(PTA,54.5)", "I(铁矿石,53.2)", "L(塑料,52.8)"],
-          "B级_score_30_44_共7个": ["C(玉米,44.3)", "SC(原油,44.2)", "V(PVC,43.3)", "RB(螺纹钢,43.0)", "AU(黄金,42.6)", "CU(铜,41.1)", "AL(铝,40.4)"],
+          "S级_score_ge_60_共14个": [
+            "Y(豆油,80.7)",
+            "OI(菜油,79.6)",
+            "EB(苯乙烯,78.7)",
+            "AG(白银,77.0)",
+            "PB(铅,76.9)",
+            "SA(纯碱,76.4)",
+            "LC(碳酸锂,76.3)",
+            "M(豆粕,74.3)",
+            "UR(尿素,73.2)",
+            "PG(液化气,70.0)",
+            "SN(锡,68.7)",
+            "CF(棉花,62.5)",
+            "SF(硅铁,61.6)",
+            "ZN(锌,60.3)"
+          ],
+          "A级_score_45_59_共7个": [
+            "RM(菜粕,58.5)",
+            "SH(烧碱,57.5)",
+            "MA(甲醇,56.5)",
+            "NI(镍,55.5)",
+            "TA(PTA,54.5)",
+            "I(铁矿石,53.2)",
+            "L(塑料,52.8)"
+          ],
+          "B级_score_30_44_共7个": [
+            "C(玉米,44.3)",
+            "SC(原油,44.2)",
+            "V(PVC,43.3)",
+            "RB(螺纹钢,43.0)",
+            "AU(黄金,42.6)",
+            "CU(铜,41.1)",
+            "AL(铝,40.4)"
+          ],
           "C级_score_lt_30": "PP/PX/AP/PF/EG/FG/RU/SR/P/AO/LH/PK/CJ/SM/SI/JD"
         },
         "key_switch_products": {
@@ -1549,7 +1725,34 @@
         },
         "anti_filter_products": "JD鸡蛋(-2.59%), SM锰硅(-1.88%), CJ红枣(-1.50%), SI工业硅(-0.98%), AO氧化铝(-0.84%), PK花生(-0.65%), LH生猪(-0.39%) — 纠缠入场反而更差",
         "atm_vs_otm": "ATM(Phase2a): 23/41=56%成立, 仅1个Switch品种. OTM(Phase2b): 28/44=64%成立, 15个Switch品种. OTM宽跨对过滤器响应更强",
-        "report": "~/Scripts/ma_tangle_otm_results/multidim_report.html"
+        "report": "~/Scripts/ma_tangle_otm_results/multidim_report.html",
+        "b044_40ma_confirm": {
+          "date": "2026-03-17",
+          "rule": "20MA=trending且40MA=entangled→降级为entangled",
+          "belief_holds": "30/44品种",
+          "common_products_improvement": "B043 2/9 → B044 8/9",
+          "override_trades": "13-14%被降级, 25/35品种降级组优于真趋势",
+          "override_vs_trending": "30m +0.192%, 60m +0.299%",
+          "override_best": "SN+1.68% SM+1.49% LH+1.13% CJ+0.88% EB+0.63% CU+0.58%",
+          "override_worst": "PK-0.97% SF-1.02% AP-0.46% M-0.36% OI-0.32% NI-0.68%"
+        },
+        "b045_crosscount": {
+          "date": "2026-03-17",
+          "rule": "三维判定:穿越次数(CrossCount)+偏向比例(Bias≥0.8)+40MA等距确认",
+          "belief_holds": "38/44品种(86.4%)",
+          "best_cross_threshold": 3,
+          "avg_diff_at_ct3": "+0.684%",
+          "entangled_pct_at_ct3": "64.3%",
+          "ct_vote": {
+            "2": 1,
+            "3": 15,
+            "4": 6,
+            "5": 10,
+            "6": 12
+          },
+          "top_products": "SR+6.22% PG+5.60% NI+4.25% AG+3.86%",
+          "anti_filter": "I/L/LH/PB/SF/UR"
+        }
       }
     }
   ],
@@ -1929,6 +2132,21 @@
       "date": "2026-03-12",
       "action": "新增B042-腿背离均值回归信号全市场验证",
       "details": "52品种回测,51个A(均值回归)胜/1个B胜(ad仅3天)"
+    },
+    {
+      "date": "2026-03-22",
+      "action": "Codex卡在正在思考的链路诊断",
+      "details": "本机下行93.627Mbps/上行22.894Mbps, 但Responsiveness低(2.954秒,20RPM), Idle Latency 287ms; 到api.openai.com的HTTP首包约0.91秒. 结论: 当前慢的主因是高延迟/差响应性, 不是带宽不足; 同时Codex Helper GPU/Renderer占用偏高, 会加重界面卡顿感"
+    },
+    {
+      "date": "2026-03-23",
+      "action": "旧Mac迁移到Lexar移动硬盘",
+      "details": "迁移根目录=/Volumes/Lexar/Mac_迁移_20260323. 新电脑恢复说明在99_manifest/RESTORE_ON_NEW_MAC.md, 验收清单在99_manifest/VERIFY_AFTER_RESTORE.md. 关键约束: 用tar.gz保存SSH/CrossOver/工程目录, 历史行情保留在移动硬盘不落新机, 旧Mac必须等新机完成至少一个完整交易日验证后再清理. ExFAT会放大大量小文件的物理占用。"
+    },
+    {
+      "date": "2026-03-24",
+      "action": "Codex自动化前先在 skills.sh 检索 GitHub 相关技能仓库",
+      "details": "GitHub 相关高匹配结果: alfredang/skills@github-push, tonkotsuboy/github-upload-image-to-pr@github-upload-image-to-pr, rj-yingjunjie/skill-hub@skill-upload. 结论: 设自动化前必须先锁定具体 skill 标识和目标仓库目录，不能仅凭口头名称猜测。"
     }
   ]
 }
